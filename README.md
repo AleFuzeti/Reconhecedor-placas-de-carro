@@ -6,4 +6,4 @@ sudo apt install tesseract-ocr
 sudo apt install libtesseract-dev
 pip install pytesseract
 
- libgl1-mesa-glx
+libgl1-mesa-glx

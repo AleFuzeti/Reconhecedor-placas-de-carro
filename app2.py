@@ -12,7 +12,7 @@ if os.path.exists('resultados'):
         os.remove(os.path.join('resultados', file))
 
 # Caminho para a pasta com as imagens
-image_folder = 'dataset/test'
+image_folder = 'Arquivo'
 
 # Listando todas as imagens da pasta
 image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
@@ -50,11 +50,13 @@ else:
             print(f"Erro ao carregar a imagem {image_file}.")
             continue
 
+        image = cv2.resize(image, (416, 416))
+
         # escala de cinza
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
         # threshold
-        _, threshold = cv2.threshold(gray_image, 90, 255, cv2.THRESH_BINARY)
+        _, threshold = cv2.threshold(gray_image, 105, 255, cv2.THRESH_BINARY)
 
         #  Gaussiano
         blurred_gaussian = cv2.GaussianBlur(threshold, (3, 3), 0)
@@ -79,7 +81,7 @@ else:
         plate_detected = False
 
         for cnt in contours:
-            perimetro = cv2.arcLength(cnt, True) * 0.02
+            perimetro = cv2.arcLength(cnt, True) * 0.03
             approx = cv2.approxPolyDP(cnt, perimetro, True)
 
             if len(approx) == 4:
@@ -87,7 +89,7 @@ else:
                 aspect_ratio = float(w) / h
 
                 # Verificar proporção
-                if 2.0 <= aspect_ratio <= 5.0 and w > 50 and h > 20:
+                if 2 <= aspect_ratio <= 5.0 and w > 50 and h > 20:
                     # Verificar ângulos 
                     if is_rectangle(approx):
                         plate_detected = True  # Placa detectada
@@ -96,6 +98,7 @@ else:
 
                         # Recortar a região da placa
                         plate_region = gray_image[y:y+h, x:x+w]
+                        
                         plt.imshow(plate_region, cmap='gray')
                         plt.imsave('plate_region.png', plate_region, cmap='gray')
                         num_img += 1
@@ -108,7 +111,7 @@ else:
 
                     
         # Se alguma placa foi detectada, salva a imagem
-        if plate_detected:
+        if plate_detected or True:
             output_path = os.path.join('resultados', f'contornos_{image_file}')
             if not os.path.exists('resultados'):
                 os.makedirs('resultados')
