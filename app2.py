@@ -37,7 +37,7 @@ def is_rectangle(approx):
             return False
     return True
 
-# Verificando se encontrou imagens
+
 if not image_files:
     print("Nenhuma imagem encontrada na pasta.")
 else:
@@ -115,43 +115,36 @@ else:
 
             plt.figure(figsize=(15, 10))
 
-            # Imagem Original
             plt.subplot(2, 3, 1)
             plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
             plt.title('Imagem Original')
             plt.axis('off')
 
-                # Filtro Gaussiano
             plt.subplot(2, 3, 2)
             plt.imshow(blurred_gaussian, cmap='gray')
             plt.title('Filtro Gaussiano')
             plt.axis('off')
 
-            # Imagem Equalizada
             plt.subplot(2, 3, 3)
             plt.imshow(equalized_image, cmap='gray')
             plt.title('Equalização de Histograma')
             plt.axis('off')
 
-            # Detecção de Bordas (Canny)
             plt.subplot(2, 3, 4)
             plt.imshow(edges, cmap='gray')
             plt.title('Detecção de Bordas (Canny)')
             plt.axis('off')
 
-            # Detecção de Bordas Fechadas (Morfologia)
             plt.subplot(2, 3, 5)
             plt.imshow(closed_edges, cmap='gray')
             plt.title('Bordas Fechadas (Morfologia)')
             plt.axis('off')
 
-            
             plt.subplot(2, 3, 6)
             plt.imshow(cv2.cvtColor(image_with_contours, cv2.COLOR_BGR2RGB))
             plt.title(f'Contornos e Detecção de Placas')
             plt.axis('off')
             
-            # Mostra os gráficos
             plt.tight_layout()
             plt.savefig(output_path)
             
