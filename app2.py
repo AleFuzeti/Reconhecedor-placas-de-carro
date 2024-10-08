@@ -2,6 +2,9 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import pytesseract
+
+num_img = 0
 
 # limpar a pasta de resultados
 if os.path.exists('resultados'):
@@ -14,6 +17,26 @@ image_folder = 'dataset/test'
 # Listando todas as imagens da pasta
 image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
 
+def is_rectangle(approx):
+    # Calcula os ângulos entre os pontos
+    for i in range(4):
+        pt1 = approx[i][0] # Ponto atual
+        pt2 = approx[(i + 1) % 4][0] # Próximo ponto
+        pt3 = approx[(i + 2) % 4][0] # Ponto após o próximo
+
+        v1 = pt2 - pt1 # Vetor 1
+        v2 = pt3 - pt2 # Vetor 2
+
+        dot_product = np.dot(v1, v2)    # Produto escalar
+        mag_v1 = np.linalg.norm(v1)    # Magnitude do vetor 1
+        mag_v2 = np.linalg.norm(v2)   # Magnitude do vetor 2
+
+        angle = np.arccos(dot_product / (mag_v1 * mag_v2)) * 180.0 / np.pi
+
+        if not (80 <= angle <= 100):  # Verifica se o ângulo está próximo de 90°
+            return False
+    return True
+
 # Verificando se encontrou imagens
 if not image_files:
     print("Nenhuma imagem encontrada na pasta.")
@@ -21,31 +44,33 @@ else:
     for image_file in image_files:
         image_path = os.path.join(image_folder, image_file)
 
-        # Carregando a imagem
         image = cv2.imread(image_path)
 
         if image is None:
             print(f"Erro ao carregar a imagem {image_file}.")
             continue
 
-        # Convertendo para escala de cinza
+        # escala de cinza
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # threshold
+        _, threshold = cv2.threshold(gray_image, 90, 255, cv2.THRESH_BINARY)
 
-        # Aplicando o Filtro Gaussiano
-        blurred_gaussian = cv2.GaussianBlur(gray_image, (5, 5), 0)
+        #  Gaussiano
+        blurred_gaussian = cv2.GaussianBlur(threshold, (3, 3), 0)
 
-        # Equalização de Histograma
-        equalized_image = cv2.equalizeHist(blurred_gaussian)
+        # Equalização
+        equalized_image = blurred_gaussian
 
-        # Detecção de bordas usando Canny (ajustar parâmetros)
-        edges = cv2.Canny(equalized_image, 50, 150)
+        # bordas - Canny 
+        edges = cv2.Canny(equalized_image, 100, 160)
 
-        # Aplicação de Transformações Morfológicas (fechamento)
+        # fechamento  bordas
         kernel = np.ones((3, 3), np.uint8)
         closed_edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
         # Encontrar contornos
-        contours, _ = cv2.findContours(closed_edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(closed_edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
         # Desenhar os contornos na imagem original
         image_with_contours = image.copy()
@@ -54,21 +79,34 @@ else:
         plate_detected = False
 
         for cnt in contours:
-            # Aproximar os contornos para verificar se formam um quadrilátero
-            epsilon = 0.02 * cv2.arcLength(cnt, True)
-            approx = cv2.approxPolyDP(cnt, epsilon, True)
+            perimetro = cv2.arcLength(cnt, True) * 0.02
+            approx = cv2.approxPolyDP(cnt, perimetro, True)
 
-            # Se o contorno aproximado tiver 4 vértices, pode ser a placa (retângulo)
             if len(approx) == 4:
                 x, y, w, h = cv2.boundingRect(approx)
                 aspect_ratio = float(w) / h
 
-                # Verificar se a proporção está dentro da faixa típica de uma placa veicular
-                if 2 <= aspect_ratio <= 5 and w > 50 and h > 20:
-                    plate_detected = True  # Placa detectada
-                    cv2.drawContours(image_with_contours, [approx], -1, (0, 255, 0), 3)
-                    cv2.putText(image_with_contours, "Placa", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                # Verificar proporção
+                if 2.0 <= aspect_ratio <= 5.0 and w > 50 and h > 20:
+                    # Verificar ângulos 
+                    if is_rectangle(approx):
+                        plate_detected = True  # Placa detectada
+                        cv2.drawContours(image_with_contours, [approx], -1, (0, 255, 0), 3)
+                        cv2.putText(image_with_contours, "Placa", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
+                        # Recortar a região da placa
+                        plate_region = gray_image[y:y+h, x:x+w]
+                        plt.imshow(plate_region, cmap='gray')
+                        plt.imsave('plate_region.png', plate_region, cmap='gray')
+                        num_img += 1
+
+                        # Usar Tesseract para reconhecer caracteres da placa
+                        custom_config = r'--oem 3 --psm 6'
+                        plate_text = pytesseract.image_to_string(plate_region, config=custom_config)
+
+                        print(f"Texto reconhecido na placa: {plate_text.strip()}")
+
+                    
         # Se alguma placa foi detectada, salva a imagem
         if plate_detected:
             output_path = os.path.join('resultados', f'contornos_{image_file}')
@@ -119,4 +157,6 @@ else:
             
             plt.close()
 
-            print(f"Placa detectada: {image_file} - Resultado salvo em {output_path}")
+            print(f"arquivo: {image_file}")
+
+print(f"Total de imagens processadas: {num_img}")
