@@ -1,4 +1,3 @@
-```markdown
 # 🚗 Reconhecedor de Placas de Carro
 
 Projeto de visão computacional para **detecção e reconhecimento de placas de veículos** utilizando OpenCV e OCR com Tesseract.
@@ -17,7 +16,6 @@ Certifique-se de ter o Python instalado. Em seguida, instale as bibliotecas nece
 
 ```bash
 pip install opencv-python numpy matplotlib pytesseract
-```
 
 ### 🧱 Dependências do sistema (Linux)
 
