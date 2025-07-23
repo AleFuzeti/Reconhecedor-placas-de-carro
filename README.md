@@ -51,8 +51,5 @@ Se esse comando funcionar, o OCR está pronto para uso.
 python main.py
 ```
 
-Os resultados serão salvos na pasta `resultados/`
----
-
 > Este projeto tem fins educacionais e de experimentação com visão computacional.
 ```
